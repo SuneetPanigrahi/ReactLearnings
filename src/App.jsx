@@ -7,9 +7,9 @@ function App() {
   let { data, isLoading, isError } = useQuery({
     queryKey: ["posts"],
     queryFn: () =>
-      wait(1000).then(
-        async () => await (await fetch("http://localhost:3000/posts")).json()
-      ),
+      wait(1000)
+        .then(() => fetch("http://localhost:3000/posts"))
+        .then((res) => res.json()),
   });
 
   //Delete Data
@@ -27,10 +27,32 @@ function App() {
     },
   });
   console.log("DATA", data);
+
+  //Update Data
+  let updateMutation = useMutation({
+    mutationFn: ({ id, updatedData }) => {
+      return wait(1000).then(() =>
+        fetch(`http://localhost:3000/posts/${id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ title: updatedData }),
+        })
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["posts"]);
+    },
+  });
+  let handleUpdate = (id) => {
+    let updatedData = prompt("Enter updated title");
+    updateMutation.mutate({ id, updatedData });
+  };
+
   if (isLoading) {
     return <h1>Loading...</h1>;
   }
-
   if (isError) {
     return <h1>Something is wrong</h1>;
   }
@@ -46,6 +68,7 @@ function App() {
             <button onClick={() => deleteMutation.mutate(post.id)}>
               Delete
             </button>
+            <button onClick={() => handleUpdate(post.id)}>Update</button>
           </li>
         ))}
     </div>
